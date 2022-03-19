@@ -1,0 +1,158 @@
+# **Project**
+
+The project idea is predict the customer mode regarding to the reviews
+
+## Dataset
+
+Nearly 7,000 reviews scraped from yelp.com about Austin, Texas coffee shops, attributes replaced, sentiments around attributes.
+
+Collect reviews on coffee shops from Yelp.com with a row for each review, and columns with the following data:
+
+-   Coffee shop name
+
+-   Review text
+
+-   Review Score
+
+### Import
+
+```{r}
+install.packages("SnowballC")
+```
+
+```{r}
+library(ggplot2)
+library(mlbench)
+library(tidyverse)
+library(psych)
+library(dplyr)
+library(tm)
+library(tokenizers)
+library(SnowballC)
+```
+
+```{r}
+df <- read_csv("/Users/abdulazizalkhonain/Documents/Data Apps/SDG Project/Dataset/ratings_and_sentiments.csv")
+# Rows: 7621 Columns: 20  
+df <-as.data.frame(df)
+print(class(df))
+head(df)
+
+```
+
+```{r}
+view(df)
+describe(df) # the start mean the value is object otherwise its numbercal
+```
+
+Removing missing values and check where does it contains the missing
+
+```{r}
+sum(is.na(df)) # checks the if it contains any missing values
+sum(is.na(df$vibe_sent)) # it contains most the missing values so we will remove it
+df = select(df, -vibe_sent)
+df <- na.omit(df) # removing the missing values 
+sum(is.na(df)) 
+```
+
+Remove any coffee with less than 20 reviews
+
+```{r}
+table(df['coffee_shop_name'])
+
+df <- df[df$coffee_shop_name != 'Sister Coffee',]
+df <- df[df$coffee_shop_name != 'Kowabunga Coffee',]
+df <- df[df$coffee_shop_name != 'The Marvelous Vintage Tea Party Co.',]
+df <- df[df$coffee_shop_name != 'Lola Savannah Coffee Downtown',]
+```
+
+```{r}
+nrow(df)
+```
+
+Processing with the review by cleaning it from any numbers, links, spaces, punct etc...
+
+```{r}
+# Get the text column
+text <- df$review_text
+# Remove mentions, urls, emojis, numbers, punctuations, etc.
+text <- gsub("@\\w+", "", text)
+text <- gsub("https?://.+", "", text)
+text <- gsub("\\d+\\w*\\d*", "", text)
+text <- gsub("#\\w+", "", text)
+text <- gsub("[^\x01-\x7F]", "", text)
+text <- gsub("[[:punct:]]", " ", text)
+# Remove spaces and newlines
+text <- gsub("\n", " ", text)
+text <- gsub("^\\s+", "", text)
+text <- gsub("\\s+$", "", text)
+text <- gsub("[ |\t]+", " ", text)
+# Set the text to lowercase
+text <- tolower(text)
+```
+
+Process to use NLP techniques by removing stop words tokenize etc...
+
+```{r}
+documents = c("She had toast for breakfast",
+              "The coffee this morning was excellent", 
+              "For lunch let's all have pancakes", 
+              "Later in the day, there will be more talks", 
+              "The talks on the first day were great", 
+              "The second day should have good presentations too")
+documents <- Corpus(VectorSource(documents))
+documents = tm_map(documents, content_transformer(tolower))
+documents = tm_map(documents, removePunctuation)
+documents = tm_map(documents, stripWhitespace)
+documents = tm_map(documents, removeWords, stopwords("english"))
+documents
+
+documents[[1]]$content
+documents[[2]]$content
+documents[[3]]$content
+documents[[4]]$content
+documents[[5]]$content
+documents[[6]]$content
+```
+
+Above is sample of what kind of removing will be to the text so if we implement that on the review_text it will be as shown
+
+```{r}
+view(text)
+```
+
+```{r}
+documents <- Corpus(VectorSource(text))
+documents = tm_map(documents, content_transformer(tolower))
+documents = tm_map(documents, removePunctuation)
+documents = tm_map(documents, removeWords, stopwords("english"))
+documents
+
+documents[[1]]$content
+documents[[2]]$content
+documents[[3]]$content
+documents[[4]]$content
+documents[[5]]$content
+documents[[6]]$content
+```
+
+the text now is more better after normalizing it but some words are not the best use here so we will take each word and checks the dictionary if it is an English word or not after
+
+```{r}
+documents[[1]]$content
+tokenize_words(documents[[1]]$content)
+```
+
+The idea above show how it split each word individually , *Tokenize* the next step is stemming and lemmatization
+
+Stemming Words - After tokenization, we need to analyze each word by breaking it down in it's root (stemming) and conjugation affix.
+
+```{r}
+values <- documents$content
+print("Before Stemming")
+print(values[1])
+# values <- tm_map(values, stemDocument)
+print("After Stemming")
+print(values[1])
+
+```
