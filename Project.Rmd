@@ -1,12 +1,14 @@
 # **Project**
 
-The project idea is predict the customer mode regarding to the reviews
+The competitiveness between coffee shops is increasing exponentially, and customer reviews usually determines the success of each café; so we decided to offer help by making a sentiment analysis of customer reviews, and getting each Café's needs based on multiple factors.
+" NEED TO BE EDITED"
 
 ## Dataset
 
-Nearly 7,000 reviews scraped from yelp.com about Austin, Texas coffee shops, attributes replaced, sentiments around attributes.
+Our dataset is scraped from yelp.com containing nearly 7,000 reviews, about coffee shops in Austin and Texas. The attributes are replaced, and sentiments around attributes.
+" NEED TO BE CHANGED "
 
-Collect reviews on coffee shops from Yelp.com with a row for each review, and columns with the following data:
+The columns we used:
 
 -   Coffee shop name
 
@@ -32,7 +34,7 @@ library(SnowballC)
 ```
 
 ```{r}
-df <- read_csv("/Users/abdulazizalkhonain/Documents/Data Apps/SDG Project/Dataset/ratings_and_sentiments.csv")
+df <- read_csv("Dataset/ratings_and_sentiments.csv")
 # Rows: 7621 Columns: 20  
 df <-as.data.frame(df)
 print(class(df))
@@ -45,17 +47,17 @@ view(df)
 describe(df) # the start mean the value is object otherwise its numbercal
 ```
 
-Removing missing values and check where does it contains the missing
+Removing missing values and checking where they occurred.
 
 ```{r}
-sum(is.na(df)) # checks the if it contains any missing values
-sum(is.na(df$vibe_sent)) # it contains most the missing values so we will remove it
+sum(is.na(df)) # Checks whether the DS contains any missing values
+sum(is.na(df$vibe_sent)) # vibe_sent column contains most of the missing values; so we will remove it.
 df = select(df, -vibe_sent)
-df <- na.omit(df) # removing the missing values 
+df <- na.omit(df)
 sum(is.na(df)) 
 ```
 
-Remove any coffee with less than 20 reviews
+Remove any Coffee Shop with less than 20 reviews.
 
 ```{r}
 table(df['coffee_shop_name'])
@@ -70,12 +72,12 @@ df <- df[df$coffee_shop_name != 'Lola Savannah Coffee Downtown',]
 nrow(df)
 ```
 
-Processing with the review by cleaning it from any numbers, links, spaces, punct etc...
+Processing the reviews by cleaning them from any numbers, links, spaces, punctuation etc...
 
 ```{r}
 # Get the text column
 text <- df$review_text
-# Remove mentions, urls, emojis, numbers, punctuations, etc.
+# Removing mentions, URLs, Emojis, numbers, punctuation, etc.
 text <- gsub("@\\w+", "", text)
 text <- gsub("https?://.+", "", text)
 text <- gsub("\\d+\\w*\\d*", "", text)
@@ -91,7 +93,7 @@ text <- gsub("[ |\t]+", " ", text)
 text <- tolower(text)
 ```
 
-Process to use NLP techniques by removing stop words tokenize etc...
+Using NLP techniques to remove stop words, tokenize, etc...
 
 ```{r}
 documents = c("She had toast for breakfast",
@@ -115,7 +117,7 @@ documents[[5]]$content
 documents[[6]]$content
 ```
 
-Above is sample of what kind of removing will be to the text so if we implement that on the review_text it will be as shown
+Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below: " NEED TO BE EDITED LATER "
 
 ```{r}
 view(text)
@@ -136,16 +138,16 @@ documents[[5]]$content
 documents[[6]]$content
 ```
 
-the text now is more better after normalizing it but some words are not the best use here so we will take each word and checks the dictionary if it is an English word or not after
+The text is better after we normalized it, but some words are not in their proper use cases; so we will check every word in the English language dictionary, and see whether it's an English word or not.
 
 ```{r}
 documents[[1]]$content
 tokenize_words(documents[[1]]$content)
 ```
 
-The idea above show how it split each word individually , *Tokenize* the next step is stemming and lemmatization
+The idea above shows how it splits each word individually, *Tokenize* the next step is stemming and lemmatization
 
-Stemming Words - After tokenization, we need to analyze each word by breaking it down in it's root (stemming) and conjugation affix.
+Stemming Words - After tokenization, we need to analyze each word by breaking it down to it's root (stemming) and conjugation affix. " NEED TO BE EDIT LATER "
 
 ```{r}
 values <- documents$content
