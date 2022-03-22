@@ -6,7 +6,7 @@ The competitiveness between coffee shops is increasing exponentially, and custom
 ## Dataset
 
 Our dataset is scraped from yelp.com containing nearly 7,000 reviews, about coffee shops in Austin and Texas. The attributes are replaced, and sentiments around attributes.
-" NEED TO BE CHANGED "
+" NEED TO BE EDITED "
 
 The columns we used:
 
@@ -19,10 +19,11 @@ The columns we used:
 ### Import
 
 ```{r}
-install.packages("SnowballC")
+#install.packages("SnowballC")
 ```
 
-```{r}
+```{r message=FALSE}
+library(reticulate)
 library(ggplot2)
 library(mlbench)
 library(tidyverse)
@@ -33,17 +34,16 @@ library(tokenizers)
 library(SnowballC)
 ```
 
-```{r}
+```{r message=FALSE}
 df <- read_csv("Dataset/ratings_and_sentiments.csv")
 # Rows: 7621 Columns: 20  
 df <-as.data.frame(df)
 print(class(df))
-head(df)
+head(df)[1, 1:2]
 
 ```
 
-```{r}
-view(df)
+```{r warning=FALSE}
 describe(df) # the start mean the value is object otherwise its numbercal
 ```
 
@@ -95,13 +95,10 @@ text <- tolower(text)
 
 Using NLP techniques to remove stop words, tokenize, etc...
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 documents = c("She had toast for breakfast",
               "The coffee this morning was excellent", 
-              "For lunch let's all have pancakes", 
-              "Later in the day, there will be more talks", 
-              "The talks on the first day were great", 
-              "The second day should have good presentations too")
+              "For lunch let's all have pancakes")
 documents <- Corpus(VectorSource(documents))
 documents = tm_map(documents, content_transformer(tolower))
 documents = tm_map(documents, removePunctuation)
@@ -112,18 +109,16 @@ documents
 documents[[1]]$content
 documents[[2]]$content
 documents[[3]]$content
-documents[[4]]$content
-documents[[5]]$content
-documents[[6]]$content
+
 ```
 
-Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below: " NEED TO BE EDITED LATER "
+Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below: " NEED TO BE EDITED "
 
 ```{r}
 view(text)
 ```
 
-```{r}
+```{r warning=FALSE}
 documents <- Corpus(VectorSource(text))
 documents = tm_map(documents, content_transformer(tolower))
 documents = tm_map(documents, removePunctuation)
@@ -133,28 +128,43 @@ documents
 documents[[1]]$content
 documents[[2]]$content
 documents[[3]]$content
-documents[[4]]$content
-documents[[5]]$content
-documents[[6]]$content
+
 ```
 
-The text is better after we normalized it, but some words are not in their proper use cases; so we will check every word in the English language dictionary, and see whether it's an English word or not.
+The text is better after we normalized it, but some words are not in their proper use cases; so we will check to see whether each word is in the English dictionary or not.
 
 ```{r}
 documents[[1]]$content
 tokenize_words(documents[[1]]$content)
 ```
 
-The idea above shows how it splits each word individually, *Tokenize* the next step is stemming and lemmatization
+The idea above shows how it splits each word individually (Tokenize), the next step is stemming and lemmatization.
 
-Stemming Words - After tokenization, we need to analyze each word by breaking it down to it's root (stemming) and conjugation affix. " NEED TO BE EDIT LATER "
+Stemming Words - After tokenization, we need to analyze each word by reverting it to its base form (stemming) and conjugation affix. " NEED TO BE EDITED "
 
-```{r}
+```{r warning=FALSE}
 values <- documents$content
 print("Before Stemming")
-print(values[1])
-# values <- tm_map(values, stemDocument)
+values[1]
+values <- Corpus(VectorSource(documents$content))
+values <- tm_map(values, stemDocument)
 print("After Stemming")
-print(values[1])
-
+print(values$content[1])
+values$content <- tokenize(values$content)
 ```
+
+
+prototype of word impact on review, (NOT COMPLETED)
+```{python}
+occurences = {}
+for run in r.values["content"][0:100]:
+  for word in run.split():
+    if word not in occurences:
+      occurences[word] = [1, 0]
+      continue
+    occurences[word][0] += 1
+
+for word in list(occurences.keys())[0:100]:
+  print(word, occurences[word][0])
+```
+
