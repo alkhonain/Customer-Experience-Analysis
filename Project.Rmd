@@ -1,12 +1,10 @@
 # **Project**
 
-The competitiveness between coffee shops is increasing exponentially, and customer reviews usually determines the success of each café; so we decided to offer help by making a sentiment analysis of customer reviews, and getting each Café's needs based on multiple factors.
-" NEED TO BE EDITED"
+The competitiveness between coffee shops is increasing exponentially, and customer reviews usually determines the success of each café; so we decided to offer help by making a sentiment analysis of customer reviews, and getting each Café's needs based on multiple factors. " NEED TO BE EDITED"
 
 ## Dataset
 
-Our dataset is scraped from yelp.com containing nearly 7,000 reviews, about coffee shops in Austin and Texas. The attributes are replaced, and sentiments around attributes.
-" NEED TO BE CHANGED "
+Our dataset is scraped from yelp.com containing nearly 7,000 reviews, about coffee shops in Austin and Texas. The attributes are replaced, and sentiments around attributes. " NEED TO BE CHANGED "
 
 The columns we used:
 
@@ -19,7 +17,7 @@ The columns we used:
 ### Import
 
 ```{r}
-install.packages("SnowballC")
+install.packages("wordcloud")
 ```
 
 ```{r}
@@ -30,7 +28,9 @@ library(psych)
 library(dplyr)
 library(tm)
 library(tokenizers)
-library(SnowballC)
+library(syuzhet)
+library(wordcloud)
+library(wordcloud2)
 ```
 
 ```{r}
@@ -52,9 +52,14 @@ Removing missing values and checking where they occurred.
 ```{r}
 sum(is.na(df)) # Checks whether the DS contains any missing values
 sum(is.na(df$vibe_sent)) # vibe_sent column contains most of the missing values; so we will remove it.
-df = select(df, -vibe_sent)
+df <- select(df, -vibe_sent)
 df <- na.omit(df)
 sum(is.na(df)) 
+```
+
+```{r}
+df <- select(df, c(1,2,4,6))
+view(df)
 ```
 
 Remove any Coffee Shop with less than 20 reviews.
@@ -72,7 +77,22 @@ df <- df[df$coffee_shop_name != 'Lola Savannah Coffee Downtown',]
 nrow(df)
 ```
 
-Processing the reviews by cleaning them from any numbers, links, spaces, punctuation etc...
+```{r}
+sum(df$bool_HIGH)
+```
+
+6094 was giving high review results which is above 3, the plot below will shows the result in more details
+
+```{r}
+ggplot(df, aes(x = as.factor(bool_HIGH))) + 
+  geom_bar(fill = "skyblue") +
+  labs(x = "Satisfaction", y = "Count") +
+  scale_x_discrete(labels = c("Low", "High")) +
+  coord_flip() +
+  theme_bw()
+```
+
+Processing the reviews by cleaning them from![]() any numbers, links, spaces, punctuation etc...
 
 ```{r}
 # Get the text column
@@ -117,7 +137,11 @@ documents[[5]]$content
 documents[[6]]$content
 ```
 
-Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below: " NEED TO BE EDITED LATER "
+Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below:
+
+" NEED TO BE EDITED LATER "
+
+it's just example to show the concept of removing stop words only
 
 ```{r}
 view(text)
@@ -138,23 +162,363 @@ documents[[5]]$content
 documents[[6]]$content
 ```
 
-The text is better after we normalized it, but some words are not in their proper use cases; so we will check every word in the English language dictionary, and see whether it's an English word or not.
+The text above is cleaned from stopping words etc..
 
 ```{r}
-documents[[1]]$content
-tokenize_words(documents[[1]]$content)
+get_nrc_sentiment('happy')
+get_nrc_sentiment('excitment')
+
+reviews <- documents$content
+values <- get_nrc_sentiment(reviews) 
 ```
 
-The idea above shows how it splits each word individually, *Tokenize* the next step is stemming and lemmatization
-
-Stemming Words - After tokenization, we need to analyze each word by breaking it down to it's root (stemming) and conjugation affix. " NEED TO BE EDIT LATER "
+```{r}
+reviews <- documents$content
+review_sentiment <- cbind(reviews, values)
+head(review_sentiment)
+```
 
 ```{r}
-values <- documents$content
-print("Before Stemming")
-print(values[1])
-# values <- tm_map(values, stemDocument)
-print("After Stemming")
-print(values[1])
+barplot(colSums(values), col = rainbow(11), ylab = "Count", main = "Sentiment Scores for Coffee Reviews")
+```
+
+```{r}
+sent <- data.frame(colSums(values), row.names = 1:10)
+sent$Sentiment <- colnames(values)
+
+ggplot(sent, aes(x = Sentiment, y = colSums.values.)) +
+    geom_bar(stat = 'identity', position = 'dodge')
+```
+
+Take the reviews text and corpus of it
+
+```{r}
+#Create a vector containing only the text
+texts <- review_sentiment$reviews
+
+# Create a corpus  
+docs <- Corpus(VectorSource(texts))
+
+docs <- docs %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stripWhitespace)
+docs <- tm_map(docs, content_transformer(tolower))
+docs <- tm_map(docs, removeWords, stopwords("english"))
+```
+
+Create data frame that contains each word and the number of appearance in the text
+
+```{r}
+dtm <- TermDocumentMatrix(docs) 
+matrix <- as.matrix(dtm) 
+words <- sort(rowSums(matrix),decreasing=TRUE) 
+df_rev <- data.frame(word = names(words),freq=words)
+```
+
+Generate the word cloud
+
+```{r}
+set.seed(1234) # for reproducibility 
+
+wordcloud(words = df_rev$word, freq = df_rev$freq, min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
+```
+
+```{r}
+
+wordcloud2(data=df_rev, size=1.6, color='random-dark')
+```
+
+Create a function that will now
+
+## Group By Coffee Shop Name
+
+```{r}
+df_total <- cbind(df$coffee_shop_name,reviews,values, df$num_rating, df$bool_HIGH)
+```
+
+```{r}
+df_grouped <- df_total %>% group_by(`df$coffee_shop_name`)
+```
+
+## Model
+
+```{r}
+text_df <- tibble(text_review = df_total$reviews)
+text_df['id'] <- seq(1:7566)
+library(hunspell)
+library(SnowballC)
+library(xtable)
+library(knitr)
+library(kableExtra)
+library(reshape2)
+library(ggplot2)
+library(tidytext)
+library(stringr) 
+library(tidyr)   
+library(wordcloud)
+text_df <- text_df %>%  unnest_tokens(word, text_review)
+```
+
+```{r}
+getStemLanguages() %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+```{r}
+text_df$word <- wordStem(text_df$word,  language = "english")
+```
+
+```{r}
+head(table(text_df$word)) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+```{r}
+data(stop_words)
+text_df <- text_df %>% 
+  anti_join(stop_words, "word")
+```
+
+```{r}
+xtable(head(text_df %>% 
+       count(word, sort = TRUE))) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+```{r}
+text_df %>% 
+  count(word, sort = TRUE) %>% 
+  filter(n > 1000) %>% 
+  mutate(word = reorder(word, n)) %>% 
+  ggplot(aes(word, n)) + 
+  geom_col() + 
+  xlab(NULL) + 
+  coord_flip()
+```
+
+```{r}
+Sentiment_Analysis <- text_df %>% 
+  inner_join(get_sentiments("bing"), "word") %>% 
+  count(id, sentiment) %>% 
+  spread(sentiment, n, fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+```
+
+One way to analyze the sentiment of a text is to consider the text as a combination of its individual word, and the sentiment content of the whole text as the sum of the sentiment content of the individual words.
+
+```{r}
+head(Sentiment_Analysis)%>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+```
+
+if the sentiment is positive value then it's positive and Negative otherwise.
+
+Most Common Positive and Negative Words. Now we can analyze word count that contribute to each sentiment.
+
+```{r}
+Sentiment_Analysis_Word_Count <- text_df %>% 
+  inner_join(get_sentiments("bing"), "word") %>% 
+  count(word, sentiment, sort = TRUE) %>% 
+  ungroup()
+```
+
+Most Common Positive and Negative Words. Now we can analyze word count that contribute to each sentiment.
+
+```{r}
+Sentiment_Analysis_Word_Count <- text_df %>% 
+  inner_join(get_sentiments("bing"), "word") %>% 
+  count(word, sentiment, sort = TRUE) %>% 
+  ungroup()
+```
+
+```{r}
+Sentiment_Analysis_Word_Count %>% 
+  group_by(sentiment) %>% 
+  top_n(12, n) %>%
+  ungroup() %>%
+  mutate(word = reorder(word, n)) %>%
+  ggplot(aes(word, n, fill = sentiment)) + 
+  geom_col(show.legend = FALSE) + 
+  facet_wrap(~sentiment, scales = "free_y") + 
+  labs(y = "Contribution to Sentiment", x = NULL) + 
+  coord_flip()
+```
+
+Word Clouds
+
+```{r}
+text_df %>% 
+  anti_join(stop_words, "word") %>%
+  count(word) %>% 
+  with(wordcloud(word, n, max.words = 100))
+```
+
+```{r}
+text_df %>% 
+  inner_join(get_sentiments("bing"), "word") %>%
+  count(word, sentiment, sort = TRUE) %>% 
+  acast(word ~ sentiment, value.var = "n", fill = 0) %>% 
+  comparison.cloud(colors = c("gray20", "gray80"), max.words = 100)
+```
+
+```{r}
+term_frequency_review <- text_df %>% count(word, sort = TRUE)
+term_frequency_review$total_words <- as.numeric(term_frequency_review %>% summarize(total = sum(n)))
+term_frequency_review$document <- as.character("Review")
+term_frequency_review <- term_frequency_review %>% 
+  bind_tf_idf(word, document, n)
+```
+
+```{r}
+term_frequency_review %>% 
+  arrange(desc(tf)) %>% 
+  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
+  group_by(document) %>% 
+  top_n(15, tf) %>% 
+  ungroup() %>% 
+  ggplot(aes(word, tf, fill = document)) + 
+  geom_col(show.legend = FALSE) + 
+  labs(x = NULL, y = "tf-idf") + 
+  facet_wrap(~document, ncol = 2, scales = "free") + 
+  coord_flip()
+```
+
+From the graph above it shows TD-IDF **term frequency-inverse document frequency,** Shows that the
+
+-   coffee
+
+-   food
+
+-   service
+
+-   seat
+
+-   check
+
+-   time
+
+-   drink
+
+-   park
+
+    are the highest Priority from the full reviews.
+
+Convert text into list of number using Tidying dfm
+
+```{r}
+library(tidytext)
+
+inaug_dfm <- df_total$reviews %>%
+  quanteda::tokens() %>%
+  quanteda::dfm(verbose = FALSE)
+inaug_dfm
+```
+
+```{r}
+inaug_td <- tidy(inaug_dfm)
+inaug_td
+```
+
+```{r}
+inaug_tf_idf <- inaug_td %>%
+  bind_tf_idf(term, document, count) %>%
+  arrange(desc(tf_idf))
+
+inaug_tf_idf
+```
+
+```{r}
+print(nrow(inaug_dfm))
+print(ncol(df_final))
+print(class(inaug_dfm))
+print(nrow(text_df))
+print(nrow(Sentiment_Analysis))
+```
+
+Function to calculate if the text positive or negitive
+
+```{r}
+val <- list()
+for(i in 1:nrow(review_sentiment)){
+  if(review_sentiment$positive[i] > review_sentiment$negative[i]){
+    val <- c(val, 1)
+  }else{
+    val <- c(val, 0)
+  }
+}
+```
+
+```{r}
+print(Reduce(`+`, val))
+print(length(val))
+```
+
+most of the values were positive
+
+```{r}
+class(val)
+val <- data.frame(matrix(unlist(val), nrow=length(val), byrow=TRUE))
+df_total$is_positiv <- val
+```
+
+check if it added correctly or not which from the value below it added correctly
+
+```{r}
+print(sum(df_total$is_positiv))
+```
+
+```{r}
+inaug_dfm_df <- as.data.frame(inaug_dfm)
+class(df_total$`df$bool_HIGH`)
+class(df_total$is_positiv)
+df_final <- cbind(inaug_dfm_df, df_total$is_positiv, df_total$`df$bool_HIGH`)
+X <- select(df_final, -target, -doc_id)
+y <- select(df_final, c(16598))
+colnames(df_final)[16598] <- "target" 
+colnames(df_final)[16597] <- "is_positive"
+ncol(inaug_dfm_df)
+ncol(df_final)
+nrow(x_train)
+nrow(y_train)
+nrow(x_test)
+nrow(y_test)
+class(x_test)
+class(x_test)
+```
+
+```{r}
+x_train <- X[1:6000,]
+y_train <- y[1:6000,]
+  
+x_test <- X[6001:7566,]
+y_test <- y[6001:7566,]
+```
+
+```{r}
+install.packages("class")
+install.packages("gmodels")
+library(class)
+library(gmodels)
+library(crosstable)
+```
+
+![]()
+
+```{r}
+y_pred <- knn(train = x_train, test = x_test,cl = y_train, k=10)``
+```
+
+```{r}
+CrossTable(x= y_test, y=y_pred,prop.chisq=FALSE)
+```
+
+NEED OVERSAMPLING OR DESAMPLING BECAUSE IT IS NOT GIVING GREAT RESULTS
+
+```{r}
 
 ```
