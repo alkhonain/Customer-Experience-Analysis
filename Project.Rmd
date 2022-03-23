@@ -6,6 +6,7 @@ The competitiveness between coffee shops is increasing exponentially, and custom
 
 Our dataset is scraped from yelp.com containing nearly 7,000 reviews, about coffee shops in Austin and Texas. The attributes are replaced, and sentiments around attributes. " NEED TO BE CHANGED "
 
+
 The columns we used:
 
 -   Coffee shop name
@@ -18,9 +19,10 @@ The columns we used:
 
 ```{r}
 install.packages("wordcloud")
-```
 
-```{r}
+
+```{r message=FALSE}
+library(reticulate)
 library(ggplot2)
 library(mlbench)
 library(tidyverse)
@@ -33,17 +35,16 @@ library(wordcloud)
 library(wordcloud2)
 ```
 
-```{r}
+```{r message=FALSE}
 df <- read_csv("Dataset/ratings_and_sentiments.csv")
 # Rows: 7621 Columns: 20  
 df <-as.data.frame(df)
 print(class(df))
-head(df)
+head(df)[1, 1:2]
 
 ```
 
-```{r}
-view(df)
+```{r warning=FALSE}
 describe(df) # the start mean the value is object otherwise its numbercal
 ```
 
@@ -115,13 +116,10 @@ text <- tolower(text)
 
 Using NLP techniques to remove stop words, tokenize, etc...
 
-```{r}
+```{r warning=FALSE, message=FALSE}
 documents = c("She had toast for breakfast",
               "The coffee this morning was excellent", 
-              "For lunch let's all have pancakes", 
-              "Later in the day, there will be more talks", 
-              "The talks on the first day were great", 
-              "The second day should have good presentations too")
+              "For lunch let's all have pancakes")
 documents <- Corpus(VectorSource(documents))
 documents = tm_map(documents, content_transformer(tolower))
 documents = tm_map(documents, removePunctuation)
@@ -132,9 +130,7 @@ documents
 documents[[1]]$content
 documents[[2]]$content
 documents[[3]]$content
-documents[[4]]$content
-documents[[5]]$content
-documents[[6]]$content
+
 ```
 
 Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below:
@@ -143,11 +139,12 @@ Above is a sample of what kind of removal will be applied to the text, so if we 
 
 it's just example to show the concept of removing stop words only
 
+
 ```{r}
 view(text)
 ```
 
-```{r}
+```{r warning=FALSE}
 documents <- Corpus(VectorSource(text))
 documents = tm_map(documents, content_transformer(tolower))
 documents = tm_map(documents, removePunctuation)
@@ -157,12 +154,11 @@ documents
 documents[[1]]$content
 documents[[2]]$content
 documents[[3]]$content
-documents[[4]]$content
-documents[[5]]$content
-documents[[6]]$content
+
 ```
 
 The text above is cleaned from stopping words etc..
+
 
 ```{r}
 get_nrc_sentiment('happy')
@@ -229,6 +225,7 @@ wordcloud(words = df_rev$word, freq = df_rev$freq, min.freq = 1,           max.w
 wordcloud2(data=df_rev, size=1.6, color='random-dark')
 ```
 
+<<<<<<< HEAD
 Create a function that will now
 
 ## Group By Coffee Shop Name
