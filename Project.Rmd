@@ -141,30 +141,3 @@ tokenize_words(documents[[1]]$content)
 The idea above shows how it splits each word individually (Tokenize), the next step is stemming and lemmatization.
 
 Stemming Words - After tokenization, we need to analyze each word by reverting it to its base form (stemming) and conjugation affix. " NEED TO BE EDITED "
-
-```{r warning=FALSE}
-values <- documents$content
-print("Before Stemming")
-values[1]
-values <- Corpus(VectorSource(documents$content))
-values <- tm_map(values, stemDocument)
-print("After Stemming")
-print(values$content[1])
-values$content <- tokenize(values$content)
-```
-
-
-prototype of word impact on review, (NOT COMPLETED)
-```{python}
-occurences = {}
-for run in r.values["content"][0:100]:
-  for word in run.split():
-    if word not in occurences:
-      occurences[word] = [1, 0]
-      continue
-    occurences[word][0] += 1
-
-for word in list(occurences.keys())[0:100]:
-  print(word, occurences[word][0])
-```
-
