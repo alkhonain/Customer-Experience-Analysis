@@ -6,7 +6,6 @@ The competitiveness between coffee shops is increasing exponentially, and custom
 
 Our dataset is scraped from yelp.com containing nearly 7,000 reviews, about coffee shops in Austin and Texas. The attributes are replaced, and sentiments around attributes. " NEED TO BE CHANGED "
 
-
 The columns we used:
 
 -   Coffee shop name
@@ -18,11 +17,6 @@ The columns we used:
 ### Import
 
 ```{r}
-install.packages("wordcloud")
-
-
-```{r message=FALSE}
-library(reticulate)
 library(ggplot2)
 library(mlbench)
 library(tidyverse)
@@ -33,10 +27,25 @@ library(tokenizers)
 library(syuzhet)
 library(wordcloud)
 library(wordcloud2)
+library(hunspell)
+library(SnowballC)
+library(xtable)
+library(knitr)
+library(kableExtra)
+library(reshape2)
+library(tidytext)
+library(stringr) 
+library(tidyr)   
+library(ROSE)
+library(class)
+library(gmodels)
+library(crosstable)
+library(caret)
 ```
 
 ```{r message=FALSE}
 df <- read_csv("Dataset/ratings_and_sentiments.csv")
+df_real <- read_csv("Dataset/raw_yelp_review_data.csv")
 # Rows: 7621 Columns: 20  
 df <-as.data.frame(df)
 print(class(df))
@@ -86,7 +95,7 @@ sum(df$bool_HIGH)
 
 ```{r}
 ggplot(df, aes(x = as.factor(bool_HIGH))) + 
-  geom_bar(fill = "skyblue") +
+  geom_bar(fill = "#755197") +
   labs(x = "Satisfaction", y = "Count") +
   scale_x_discrete(labels = c("Low", "High")) +
   coord_flip() +
@@ -139,7 +148,6 @@ Above is a sample of what kind of removal will be applied to the text, so if we 
 
 it's just example to show the concept of removing stop words only
 
-
 ```{r}
 view(text)
 ```
@@ -158,7 +166,6 @@ documents[[3]]$content
 ```
 
 The text above is cleaned from stopping words etc..
-
 
 ```{r}
 get_nrc_sentiment('happy')
@@ -183,7 +190,7 @@ sent <- data.frame(colSums(values), row.names = 1:10)
 sent$Sentiment <- colnames(values)
 
 ggplot(sent, aes(x = Sentiment, y = colSums.values.)) +
-    geom_bar(stat = 'identity', position = 'dodge')
+    geom_bar(stat = 'identity', position = 'dodge', fill = "#755197")
 ```
 
 Take the reviews text and corpus of it
@@ -217,16 +224,13 @@ Generate the word cloud
 ```{r}
 set.seed(1234) # for reproducibility 
 
-wordcloud(words = df_rev$word, freq = df_rev$freq, min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
+wordcloud(words = df_rev$word, freq = df_rev$freq, min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark3"))
 ```
 
 ```{r}
 
 wordcloud2(data=df_rev, size=1.6, color='random-dark')
 ```
-
-<<<<<<< HEAD
-Create a function that will now
 
 ## Group By Coffee Shop Name
 
@@ -243,17 +247,6 @@ df_grouped <- df_total %>% group_by(`df$coffee_shop_name`)
 ```{r}
 text_df <- tibble(text_review = df_total$reviews)
 text_df['id'] <- seq(1:7566)
-library(hunspell)
-library(SnowballC)
-library(xtable)
-library(knitr)
-library(kableExtra)
-library(reshape2)
-library(ggplot2)
-library(tidytext)
-library(stringr) 
-library(tidyr)   
-library(wordcloud)
 text_df <- text_df %>%  unnest_tokens(word, text_review)
 ```
 
@@ -379,7 +372,7 @@ term_frequency_review %>%
   top_n(15, tf) %>% 
   ungroup() %>% 
   ggplot(aes(word, tf, fill = document)) + 
-  geom_col(show.legend = FALSE) + 
+  geom_col(fill = "#755197", show.legend = FALSE) + 
   labs(x = NULL, y = "tf-idf") + 
   facet_wrap(~document, ncol = 2, scales = "free") + 
   coord_flip()
@@ -476,16 +469,8 @@ class(df_total$is_positiv)
 df_final <- cbind(inaug_dfm_df, df_total$is_positiv, df_total$`df$bool_HIGH`)
 X <- select(df_final, -target, -doc_id)
 y <- select(df_final, c(16598))
-colnames(df_final)[16598] <- "target" 
+colnames(df_final)[16598] <- "the_target" 
 colnames(df_final)[16597] <- "is_positive"
-ncol(inaug_dfm_df)
-ncol(df_final)
-nrow(x_train)
-nrow(y_train)
-nrow(x_test)
-nrow(y_test)
-class(x_test)
-class(x_test)
 ```
 
 ```{r}
@@ -496,26 +481,193 @@ x_test <- X[6001:7566,]
 y_test <- y[6001:7566,]
 ```
 
-```{r}
-install.packages("class")
-install.packages("gmodels")
-library(class)
-library(gmodels)
-library(crosstable)
-```
-
 ![]()
 
 ```{r}
-y_pred <- knn(train = x_train, test = x_test,cl = y_train, k=10)``
+y_pred <- knn(train = x_train, test = x_test,cl = y_train, k=10)
 ```
 
 ```{r}
 CrossTable(x= y_test, y=y_pred,prop.chisq=FALSE)
 ```
 
+```{r}
+cm <- confusionMatrix(data=as.factor(y_test), reference = y_pred)
+cm
+```
+
 NEED OVERSAMPLING OR DESAMPLING BECAUSE IT IS NOT GIVING GREAT RESULTS
 
 ```{r}
+```
 
+Fixing the Imbalance dataset
+
+```{r}
+library(imbalance)
+table(df_total$target)
+prop.table(table(df_total$target))
+```
+
+## **`oversample`**
+
+-   `imbalance` includes the method `oversample`, which is a wrapper that eases calls to the described and already existing methods. Possible methods are: `RACOG`, `wRACOG`, `PDFOS`, `RWO`, `ADASYN`, `ANSMOTE`, `BLSMOTE`, `DBSMOTE`, `BLSMOTE`, `DBSMOTE`, `SLMOTE`, `RSLSMOTE`.
+
+**I WILL RE CREATE THE TABLES TO BE FITTED AND DO THE OVER SAMPLE IN THE FIRST DF.**
+
+```{r}
+#Oversamipling 
+colnames(df_total)[14] <- "the_target" 
+colnames(df_total)[13] <- "rate" 
+colnames(df_total)[1] <- "shop_name" 
+
+data_balanced_over <- ovun.sample(the_target~.,
+  data = df_total, method = "over",N = 12000)$data
+
+# results after oversampling
+table(data_balanced_over$the_target)
+# Percentage
+prop.table(table(data_balanced_over$the_target))
+text_df_balanced <- tibble(text_review = 
+  data_balanced_over$reviews)
+text_df_balanced['id'] <- seq(1:12000)
+text_df_balanced <- text_df_balanced %>% 
+  unnest_tokens(word, text_review)
+```
+
+assigned the text and id to new variable to recreate them
+
+```{r}
+text_df_balanced <- tibble(text_review = data_balanced_over$reviews)
+text_df_balanced['id'] <- seq(1:12000)
+text_df_balanced <- text_df_balanced %>%  unnest_tokens(word, text_review)
+```
+
+```{r}
+text_df_balanced$word <- wordStem(text_df_balanced$word,  language = "english")
+head(table(text_df_balanced$word)) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+data(stop_words)
+text_df_balanced <- text_df_balanced %>% 
+  anti_join(stop_words, "word")
+xtable(head(text_df_balanced %>% 
+       count(word, sort = TRUE))) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+text_df_balanced %>% 
+  count(word, sort = TRUE) %>% 
+  filter(n > 2000) %>% 
+  mutate(word = reorder(word, n)) %>% 
+  ggplot(aes(word, n)) + 
+  geom_col() + 
+  xlab(NULL) + 
+  coord_flip()
+```
+
+TD-IDF
+
+```{r}
+term_frequency_review_balneced <- text_df_balanced %>% count(word, sort = TRUE)
+term_frequency_review_balneced$total_words <- as.numeric(term_frequency_review_balneced %>% summarize(total = sum(n)))
+term_frequency_review_balneced$document <- as.character("Review")
+term_frequency_review_balneced <- term_frequency_review_balneced %>% 
+  bind_tf_idf(word, document, n)
+
+term_frequency_review_balneced %>% 
+  arrange(desc(tf)) %>% 
+  mutate(word = factor(word, levels = rev(unique(word)))) %>% 
+  group_by(document) %>% 
+  top_n(15, tf) %>% 
+  ungroup() %>% 
+  ggplot(aes(word, tf, fill = document)) + 
+  geom_col(show.legend = FALSE) + 
+  labs(x = NULL, y = "tf-idf") + 
+  facet_wrap(~document, ncol = 2, scales = "free") + 
+  coord_flip()
+```
+
+Sentement analysis to get the positive and negative
+
+```{r}
+val <- list()
+for(i in 1:nrow(data_balanced_over)){
+  if(data_balanced_over$positive[i] > data_balanced_over$negative[i]){
+    val <- c(val, 1)
+  }else{
+    val <- c(val, 0)
+  }
+}
+
+data_balanced_over$is_positiv <- val
+colnames(data_balanced_over)[15] <- "is_positiv" 
+data_balanced_over$is_positiv <- as.numeric(unlist(data_balanced_over$is_positiv))
+class(data_balanced_over$is_positiv)
+```
+
+tidy text (dfm)
+
+```{r}
+inaug_dfm_balanced <- data_balanced_over$reviews %>%
+  quanteda::tokens() %>%
+  quanteda::dfm(verbose = FALSE)
+
+inaug_td_balanced <- tidy(inaug_dfm_balanced)
+
+inaug_tf_idf_balanced <- inaug_td_balanced %>%
+  bind_tf_idf(term, document, count) %>%
+  arrange(desc(tf_idf))
+
+inaug_dfm_balanced_df <- as.data.frame(inaug_dfm_balanced)
+```
+
+Combine the text converation, positive/negative, and target
+
+```{r}
+df_final <- cbind(inaug_dfm_balanced_df, data_balanced_over$is_positiv, data_balanced_over$the_target)
+
+colnames(df_final)[16546] <- "the_target" 
+colnames(df_final)[16545] <- "is_positive"
+
+df_final_shuf <- df_final[sample(1:nrow(df_final)), ]
+
+X <- select(df_final_shuf, -the_target, -doc_id)
+y <- select(df_final_shuf, the_target)
+
+
+x_train <- X[1:9000,]
+y_train <- y[1:9000,]
+  
+x_test <- X[9001:12000,]
+y_test <- y[9001:12000,]
+
+nrow(x_train)
+nrow(x_test)
+
+nrow(y_train)
+nrow(y_test)
+
+class(x_test)
+class(x_test)
+
+# check the balance in the train and test
+sum(y_train)
+sum(y_test)
+```
+
+```{r}
+y_pred <- knn(train = x_train, test = x_test,cl = y_train, k=10)
+```
+
+```{r}
+CrossTable(x= y_test, y=y_pred,prop.chisq=FALSE)
+```
+
+```{r}
+cm <- confusionMatrix(data=as.factor(y_test), reference = y_pred)
+cm
+```
+
+```{r}
+df_total$reviews[[39]]
 ```
