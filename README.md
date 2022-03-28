@@ -26,7 +26,7 @@ The process of analysis is first to classify the user if he is satisfied with th
 
 then implement sentiment analysis, from that we notice the most used words as positive, negitive and the words in general.
 <br><br><p align="center">
-    <img src="images/os_neg.png" alt="pos" style="height: 500px; width:500px;"/>
+    <img src="images/pos_neg.png" alt="pos" style="height: 500px; width:500px;"/>
     <img src="images/words.png" alt="words" style="height: 500px; width:500px;"/>
 </p><br><br>
 
