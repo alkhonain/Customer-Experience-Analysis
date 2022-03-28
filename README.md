@@ -26,12 +26,12 @@ The process of analysis is first to classify the user if he is satisfied with th
 
 then implement sentiment analysis, from that we notice the most used words as positive, negitive and the words in general.
 <br><br><p align="center">
-    <img src="pos_neg.png" alt="pos" style="height: 500px; width:500px;"/>
-    <img src="words.png" alt="words" style="height: 500px; width:500px;"/>
+    <img src="images/os_neg.png" alt="pos" style="height: 500px; width:500px;"/>
+    <img src="images/words.png" alt="words" style="height: 500px; width:500px;"/>
 </p><br><br>
 
 ## Model
 The data set was imbalance so, implement over saimpling technique to solve this issue and we got a nice results with 75% accuracy 
 <br><br><p align="center">
-    <img src="model.png" alt="model" style="height: 500px; width:500px;"/>
+    <img src="images/model.png" alt="model" style="height: 500px; width:500px;"/>
 </p><br><br>
