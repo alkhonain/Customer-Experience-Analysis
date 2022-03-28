@@ -1,5 +1,5 @@
 # Customer Experience Analysis Project
-The project idea is predict the customer mode regarding to the reviews by analyzing the written text and know the customer behaviour
+The project idea is predict the customer mode regarding to the reviews by analyzing the written text and know the customer behaviour using R language
 
 ## Dataset
 
