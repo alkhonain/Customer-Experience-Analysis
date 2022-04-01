@@ -1,3 +1,9 @@
+---
+output:
+  pdf_document: default
+  html_document: default
+---
+
 # **Project**
 
 The competitiveness between coffee shops is increasing exponentially, and customer reviews usually determines the success of each café; so we decided to offer help by making a sentiment analysis of customer reviews, and getting each Café's needs based on multiple factors. " NEED TO BE EDITED"
@@ -16,7 +22,7 @@ The columns we used:
 
 ### Import
 
-```{r}
+```{r include=FALSE}
 library(ggplot2)
 library(mlbench)
 library(tidyverse)
@@ -41,13 +47,15 @@ library(class)
 library(gmodels)
 library(crosstable)
 library(caret)
+library(gsubfn)
 ```
 
 ```{r message=FALSE}
-df <- read_csv("Dataset/ratings_and_sentiments.csv")
-df_real <- read_csv("Dataset/raw_yelp_review_data.csv")
+df <- read.csv("Dataset/ratings_and_sentiments.csv")
+df_real <- read.csv("Dataset/raw_yelp_review_data.csv")
 # Rows: 7621 Columns: 20  
 df <-as.data.frame(df)
+mcd <- df[df$coffee_shop_name == "Mozart's Coffee Roasters ", ]
 print(class(df))
 head(df)[1, 1:2]
 
@@ -144,8 +152,6 @@ documents[[3]]$content
 
 Above is a sample of what kind of removal will be applied to the text, so if we implement that on the review_text it will be as shown below:
 
-" NEED TO BE EDITED LATER "
-
 it's just example to show the concept of removing stop words only
 
 ```{r}
@@ -224,7 +230,7 @@ Generate the word cloud
 ```{r}
 set.seed(1234) # for reproducibility 
 
-wordcloud(words = df_rev$word, freq = df_rev$freq, min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark3"))
+wordcloud(words = df_rev$word, freq = df_rev$freq, min.freq = 1,           max.words=200, random.order=FALSE, rot.per=0.35,            colors=brewer.pal(8, "Dark2"))
 ```
 
 ```{r}
@@ -397,6 +403,174 @@ From the graph above it shows TD-IDF **term frequency-inverse document frequency
 -   park
 
     are the highest Priority from the full reviews.
+
+## Applying on Mozart's Coffee Roasters Cafe
+
+Getting the date of each review
+
+```{r}
+mcd$date <- as.Date(
+  strapplyc(mcd$review_text, "\\d+/\\d+/\\d+", simplify = TRUE),
+  "%m/%d/%Y"
+)
+
+ggplot(mcd, aes(x=date, y = rating)) +
+  geom_point()+
+  geom_line() +
+  theme_minimal()
+```
+
+We can clearly see that bad reviews started on 30th of October 2015, and we're going to check that.
+
+```{r}
+mcd$decr <- as.numeric(mcd$date) > as.numeric(as.Date("10/30/2015", format="%m/%d/%Y"))
+```
+
+```{r}
+ggplot(mcd, aes(x=bool_HIGH)) +
+  geom_bar(fill = "#755197") +
+  labs(y = "After 10/30/2015", x="satisfied")+
+  scale_x_discrete(labels = c("No", "Yes")) +
+  facet_grid(decr ~ .) +
+  theme_bw()
+```
+
+As we said, there were no unsatisfied customers before the 30th of October 2015; so we will clear the data before 10/30/2015
+
+```{r}
+mcd <- mcd[mcd$decr == TRUE, ]
+mcd_text <- mcd$review_text
+```
+
+Applying the NLP technique
+
+```{r}
+mcd_text <- gsub("@\\w+", "", mcd_text)
+mcd_text <- gsub("https?://.+", "", mcd_text)
+mcd_text <- gsub("\\d+\\w*\\d*", "", mcd_text)
+mcd_text <- gsub("#\\w+", "", mcd_text)
+mcd_text <- gsub("[^\x01-\x7F]", "", mcd_text)
+mcd_mcd_text <- gsub("[[:punct:]]", " ", mcd_text)
+# Remove spaces and newlines
+mcd_text <- gsub("\n", " ", mcd_text)
+mcd_text <- gsub("^\\s+", "", mcd_text)
+mcd_text <- gsub("\\s+$", "", mcd_text)
+mcd_text <- gsub("[ |\t]+", " ", mcd_text)
+# Set the mcd_text to lowercase
+mcd_text <- tolower(mcd_text)
+mcd_documents <- Corpus(VectorSource(mcd_text))
+mcd_documents = tm_map(mcd_documents, content_transformer(tolower))
+mcd_documents = tm_map(mcd_documents, removePunctuation)
+mcd_documents = tm_map(mcd_documents, removeWords, stopwords("english"))
+mcd_documents
+get_nrc_sentiment('happy')
+get_nrc_sentiment('excitment')
+mcd_reviews <- mcd_documents$content
+mcd_values <- get_nrc_sentiment(mcd_reviews) 
+mcd_reviews <- mcd_documents$content
+mcd_review_sentiment <- cbind(mcd_reviews, mcd_values)
+head(mcd_review_sentiment)
+
+mcd_sent <- data.frame(colSums(mcd_values), row.names = 1:10)
+mcd_sent$Sentiment <- colnames(mcd_values)
+
+ggplot(mcd_sent, aes(x = Sentiment, y = colSums.mcd_values.)) +
+  geom_bar(stat = 'identity', position = 'dodge', fill = "#755197") +
+  labs(y = "Counts") +
+  theme_bw()
+
+table(mcd_sent)
+mcd_texts <- mcd_review_sentiment$mcd_reviews
+# Create a corpus  
+mcd_docs <- Corpus(VectorSource(mcd_texts))
+mcd_docs <- mcd_docs %>%
+  tm_map(removeNumbers) %>%
+  tm_map(removePunctuation) %>%
+  tm_map(stripWhitespace)
+mcd_docs <- tm_map(mcd_docs, content_transformer(tolower))
+mcd_docs <- tm_map(mcd_docs, removeWords, stopwords("english"))
+mcd_dtm <- TermDocumentMatrix(mcd_docs) 
+mcd_matrix <- as.matrix(mcd_dtm) 
+mcd_words <- sort(rowSums(mcd_matrix),decreasing=TRUE) 
+mcd_rev <- data.frame(word = names(words),freq=words)
+
+mcd_words <- as.data.frame(words)
+
+mcd_total <- cbind(mcd$coffee_shop_name,mcd_reviews,mcd_values, mcd$num_rating, mcd$bool_HIGH)
+mcd_grouped <- mcd_total %>% group_by(`mcd$coffee_shop_name`)
+
+
+mcd_text_mcd <- tibble(mcd_text_review = mcd_total$mcd_reviews)
+mcd_text_mcd['id'] <- seq(1:89)
+mcd_text_mcd <- mcd_text_mcd %>%  unnest_tokens(word, mcd_text_review)
+
+getStemLanguages() %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+
+mcd_text_mcd$word <- wordStem(mcd_text_mcd$word,  language = "english")
+
+head(table(mcd_text_mcd$word)) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+
+data(stop_words)
+mcd_text_mcd <- mcd_text_mcd %>% 
+  anti_join(stop_words, "word")
+
+xtable(head(mcd_text_mcd %>% 
+              count(word, sort = TRUE))) %>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+
+
+mcd_text_mcd %>% 
+  count(word, sort = TRUE) %>% 
+  filter(n > 1000) %>% 
+  mutate(word = reorder(word, n)) %>% 
+  ggplot(aes(word, n)) + 
+  geom_col() + 
+  xlab(NULL) + 
+  coord_flip()
+Sentiment_Analysis <- mcd_text_mcd %>% 
+  inner_join(get_sentiments("bing"), "word") %>% 
+  count(id, sentiment) %>% 
+  spread(sentiment, n, fill = 0) %>% 
+  mutate(sentiment = positive - negative)
+head(Sentiment_Analysis)%>%
+  kable() %>%
+  kable_styling(bootstrap_options = c("striped", "hover", "condensed"), full_width = F)
+Sentiment_Analysis_Word_Count <- mcd_text_mcd %>% 
+  inner_join(get_sentiments("bing"), "word") %>% 
+  count(word, sentiment, sort = TRUE) %>% 
+  ungroup()
+Sentiment_Analysis_Word_Count <- mcd_text_mcd %>% 
+  inner_join(get_sentiments("bing"), "word") %>% 
+  count(word, sentiment, sort = TRUE) %>% 
+  ungroup()
+```
+
+The final result
+
+```{r}
+negSent <- Sentiment_Analysis_Word_Count[Sentiment_Analysis_Word_Count$sentiment == "negative", ]
+top_n(negSent, 4, n)
+ns <- top_n(negSent, 4, n)
+ggplot(ns, aes(x=word, y = n)) +
+  geom_bar(stat="summary", fill = "#755197")+
+  labs(y = "contribution on predicted sentiment by count")+
+  theme_minimal()
+
+
+for(word in ns$word){
+  for(i in 1:89){
+    if (mcd_matrix[[word, i]] > 0){
+      title <- switch(as.character(i), "1"="st", "2" = "nd", "3" = "rd", "th")
+      cat(word, " - appeared in the ", i ,title, " review: \n", mcd$review_text[[i]], sep="", end="\n\n")
+    }
+  }
+}
+```
 
 Convert text into list of number using Tidying dfm
 
